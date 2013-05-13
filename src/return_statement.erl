@@ -28,8 +28,10 @@
 
 
 parse_transform(Ast, _Options) ->
-    parse_transform_util:transform(Ast, fun return_statement/1).
+    Ast0 = parse_transform_util:transform(Ast, fun return_statement_last_func/1),
+    parse_transform_util:transform(Ast0, fun return_statement/1).
 
+%%===================================================================
 
 return_statement({function, Line, Name, Arity, Ast}) ->
     {function, Line, Name, Arity, return_statement_func(Ast)};
@@ -72,3 +74,83 @@ catch_return_statement({clause, _Line = L, Args, Guards, Ast}) ->
             }], [], [{var, L, Var}]
         }], []}
     ]}.
+
+%%===================================================================
+
+return_statement_last_func({function, _Line, _Name, _Arity, _Ast} = Ast) ->
+    {function, Line, Name, Arity, Ast0} = return_statement_last(Ast),
+    Ast1 = parse_transform_util:transform(Ast0,
+            fun return_statement_last_func/1),
+    {function, Line, Name, Arity, Ast1};
+
+return_statement_last_func({'fun', _Line, {clauses, _Ast}} = Ast) ->
+    {'fun', Line, Ast0} = return_statement_last(Ast),
+    Ast1 = parse_transform_util:transform(Ast0,
+            fun return_statement_last_func/1),
+    {'fun', Line, Ast1};
+
+return_statement_last_func(Ast) ->
+    Ast.
+
+
+return_statement_last([Ast]) ->
+    [return_statement_last(Ast)];
+
+return_statement_last([A|Ast]) ->
+    [A | return_statement_last(Ast)];
+
+return_statement_last({function, Line, Name, Arity, Ast}) ->
+    {function, Line, Name, Arity, return_statement_last_all(Ast)};
+
+return_statement_last({'fun', Line, {clauses, Ast}}) ->
+    {'fun', Line, {clauses, return_statement_last_all(Ast)}};
+
+return_statement_last({clause, Line, Args, Guards, Ast}) ->
+    {clause, Line, Args, Guards, return_statement_last(Ast)};
+
+return_statement_last({'if', Line, Ast}) ->
+    {'if', Line, return_statement_last_all(Ast)};
+
+return_statement_last({'case', Line, St, Ast}) ->
+    {'case', Line, St, return_statement_last_all(Ast)};
+
+return_statement_last({'try', Line, St, Matches, Catches, After}) ->
+    {'try', Line,
+        return_statement_last(St),
+        return_statement_last(Matches),
+        return_statement_last(Catches),
+        return_statement_last(After)
+    };
+
+return_statement_last({'catch', Line, Ast}) ->
+    {'catch', Line, return_statement_last(Ast)};
+
+return_statement_last({'receive', Line, Ast}) ->
+    {'receive', Line, return_statement_last(Ast)};
+
+return_statement_last({match, Line, Pattern, Ast}) ->
+    {match, Line, Pattern, return_statement_last(Ast)};
+
+return_statement_last({block, Line, Ast}) ->
+    {block, Line, return_statement_last(Ast)};
+
+return_statement_last({'op', Line, Op, A, B})
+        when Op =:= 'orelse'; Op =:= 'or';
+             Op =:= 'andalso'; Op =:= 'and' ->
+    {'op', Line, Op, A, return_statement_last(B)};
+
+return_statement_last({'op', Line, '!', A, B}) ->
+    {block, Line, [A, return_statement_last(B)]};
+
+return_statement_last({'op', Line, Op, Ast}) ->
+    {'op', Line, Op, return_statement_last(Ast)};
+
+return_statement_last({call, _L0, {atom, _L1, return}, [Return]}) ->
+    Return;
+
+return_statement_last(Ast) ->
+    Ast.
+
+
+return_statement_last_all(Ast) ->
+    [return_statement_last(A) || A <- Ast].

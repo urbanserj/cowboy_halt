@@ -1,6 +1,6 @@
 {application, cowboy_halt, [
     {description, "Cowboy Halt"},
-    {vsn, "0.1"},
+    {vsn, "0.2"},
     {applications, [kernel, stdlib]},
     {env, []}
 ]}.
