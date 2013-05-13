@@ -62,6 +62,9 @@ transform({'receive', Line, Ast}, Fun) ->
 transform({'op', Line, Op, A, B}, Fun) ->
     {'op', Line, Op, transform_f(A, Fun), transform_f(B, Fun)};
 
+transform({'op', Line, Op, Ast}, Fun) ->
+    {'op', Line, Op, transform_f(Ast, Fun)};
+
 transform({match, Line, Pattern, Ast}, Fun) ->
     {match, Line, Pattern, transform_f(Ast, Fun)};
 
