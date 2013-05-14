@@ -140,7 +140,10 @@ return_statement_last({'op', Line, Op, A, B})
     {'op', Line, Op, A, return_statement_last(B)};
 
 return_statement_last({'op', Line, '!', A, B}) ->
-    {block, Line, [A, return_statement_last(B)]};
+    case return_statement_last(B) of
+        B -> {'op', Line, '!', A, B};
+        B0 -> {block, Line, [A, B0]}
+    end;
 
 return_statement_last({'op', Line, Op, Ast}) ->
     {'op', Line, Op, return_statement_last(Ast)};
