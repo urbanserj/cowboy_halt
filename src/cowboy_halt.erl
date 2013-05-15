@@ -65,13 +65,14 @@ cowboy_halt_func(Ast) when is_list(Ast) ->
 cowboy_halt_func({clause, Line, Args, Guards, Ast}) ->
     Var = list_to_atom("Cowboy-Halt-State-" ++ integer_to_list(Line)),
     State = put(cowboy_halt, false),
-    put(cowboy_halt_state, Var),
+    Var0 = put(cowboy_halt_state, Var),
     Ast0 = parse_transform_util:transform(Ast, fun cowboy_halt/1),
     Args0 =
         case put(cowboy_halt, State) of
             true -> set_state_var(Args, Var);
             false -> Args
         end,
+    put(cowboy_halt_state, Var0),
     {clause, Line, Args0, Guards, Ast0}.
 
 
