@@ -27,9 +27,15 @@
 -export([parse_transform/2]).
 
 
-parse_transform(Ast, _Options) ->
-    Ast0 = parse_transform_util:transform(Ast, fun return_statement_last_func/1),
-    parse_transform_util:transform(Ast0, fun return_statement/1).
+parse_transform(Ast, Options) ->
+    Funs =
+        case [ ok || return_statement_noopt <- Options ] of
+            [] -> [];
+            _NoOpt -> [fun return_statement_last_func/1]
+        end,
+    lists:foldr(fun (F, Ast0) ->
+        parse_transform_util:transform(Ast0, F)
+    end, Ast, Funs ++ [fun return_statement/1]).
 
 %%===================================================================
 
