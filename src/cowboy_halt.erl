@@ -29,7 +29,8 @@
 
 parse_transform(Ast, Options) ->
     Ast0 = parse_transform_util:transform(Ast, fun cowboy_halt/1),
-    return_statement:parse_transform(Ast0, Options).
+    Ast1 = return_statement:parse_transform(Ast0, Options),
+    cowboy_loop:parse_transform(Ast1, Options).
 
 cowboy_halt({function, Line, Name, Arity, Ast}) ->
     {function, Line, Name, Arity, cowboy_halt_func(Ast)};
